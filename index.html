@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Парфюмерная полка — Дегустация</title>
+  <style>
+    :root {
+      --bg: #0f0f11;
+      --surface: #18181c;
+      --surface-hover: #222228;
+      --border: #2a2a32;
+      --text: #f3f3f5;
+      --text-muted: #9a9aa6;
+      --accent: #d4af37;
+      --accent-soft: rgba(212, 175, 55, 0.14);
+      --danger: #e05252;
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 60px;
+    }
+
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    /* Шапка */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(15, 15, 17, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 0;
+    }
+    .header-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+    }
+    .brand span { color: var(--accent); }
+
+    .user-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 99px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .user-badge:hover { border-color: var(--accent); }
+    .user-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    /* Поиск и фильтры */
+    .controls {
+      margin: 20px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .search-input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 15px;
+      outline: none;
+    }
+    .search-input:focus { border-color: var(--accent); }
+
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .filter-row::-webkit-scrollbar { display: none; }
+
+    .chip {
+      white-space: nowrap;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 7px 14px;
+      border-radius: 99px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .chip.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Статус загрузки */
+    .loader {
+      text-align: center;
+      padding: 40px 16px;
+      color: var(--text-muted);
+      font-size: 15px;
+    }
+
+    /* Сетка карточек */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .shelf-num {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 12px;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .perfume-brand {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+    .perfume-name {
+      font-size: 19px;
+      font-weight: 700;
+    }
+    .avg-score {
+      text-align: right;
+      background: var(--bg);
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      min-width: 58px;
+    }
+    .avg-score strong {
+      display: block;
+      font-size: 16px;
+      color: var(--accent);
+    }
+    .avg-score span {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .real-vibe {
+      background: var(--bg);
+      border-left: 3px solid var(--accent);
+      padding: 10px 12px;
+      border-radius: 0 10px 10px 0;
+      font-size: 14px;
+    }
+    .vibe-label {
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+
+    .specs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 13px;
+    }
+    .spec-box {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      border-radius: 10px;
+    }
+    .spec-label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .tag {
+      font-size: 12px;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.05);
+      color: var(--text-muted);
+    }
+
+    .pyramid {
+      font-size: 13px;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .pyramid div span {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* Блок оценок гостей */
+    .reviews-section {
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .reviews-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .btn-rate {
+      background: var(--accent);
+      color: #111;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-rate:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-rate:hover:not(:disabled) { opacity: 0.9; }
+
+    .review-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .review-item {
+      background: var(--bg);
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 13px;
+    }
+    .review-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 2px;
+      font-weight: 600;
+    }
+    .review-author { color: var(--accent); }
+    .review-text { color: var(--text-muted); font-size: 12px; }
+
+    /* Модальные окна */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 50;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      width: 100%;
+      max-width: 400px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .modal h3 { font-size: 18px; }
+    .modal p { font-size: 13px; color: var(--text-muted); }
+
+    .preset-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .preset-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .preset-btn:hover { border-color: var(--accent); }
+
+    .input-field {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 15px;
+      outline: none;
+    }
+    .input-field:focus { border-color: var(--accent); }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .error-msg {
+      color: var(--danger);
+      font-size: 12px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="container header-inner">
+    <div class="brand">SCENT<span>SHELF</span></div>
+    <div class="user-badge" id="userBadge" onclick="openAuthModal()">
+      <span class="user-dot"></span>
+      <span id="currentUserName">Войти для оценки</span>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <div class="controls">
+    <input type="text" id="searchInput" class="search-input" placeholder="Поиск по названию, запаху (кожа, лимон, ваниль) или номеру (#01)..." />
+    
+    <div class="filter-row" id="vibeFilters">
+      <button class="chip active" data-filter="all">Все ароматы</button>
+      <button class="chip" data-filter="На каждый день">На каждый день</button>
+      <button class="chip" data-filter="Вечер / Свидание">Вечер / Свидание</button>
+      <button class="chip" data-filter="Холод и дождь">Холод и дождь</button>
+      <button class="chip" data-filter="Жара / Свежесть">Жара / Свежесть</button>
+    </div>
+  </div>
+
+  <div class="loader" id="loader">Загружаем коллекцию с полки...</div>
+  <div class="grid" id="perfumeGrid"></div>
+</main>
+
+<!-- Модалка входа по имени и ПИН-коду -->
+<div class="modal-backdrop" id="authModal">
+  <div class="modal">
+    <h3 id="authTitle">Кто оценивает?</h3>
+    <p id="authSubtitle">Выбери своё имя или создай новый профиль. Для защиты от случайных кликов нужен 4-значный ПИН.</p>
+    
+    <div id="stepSelectUser">
+      <div class="preset-grid" id="presetUsersList"></div>
+      <div style="margin-top: 10px;">
+        <button class="btn-secondary" style="width: 100%;" onclick="showNewUserStep()">+ Я новый гость</button>
+      </div>
+    </div>
+
+    <div id="stepPinCheck" style="display: none; flex-direction: column; gap: 10px;">
+      <input type="password" id="pinInput" class="input-field" maxlength="4" inputmode="numeric" placeholder="Введи 4 цифры ПИН-кода" />
+      <div class="error-msg" id="pinError">Неверный ПИН-код</div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="resetAuthModal()">Назад</button>
+        <button class="btn-rate" id="btnVerifyPin" onclick="verifyPin()">Войти</button>
+      </div>
+    </div>
+
+    <div id="stepNewUser" style="display: none; flex-direction: column; gap: 10px;">
+      <input type="text" id="newNameInput" class="input-field" placeholder="Твоё имя" />
+      <input type="password" id="newPinInput" class="input-field" maxlength="4" inputmode="numeric" placeholder="Придумай ПИН (4 цифры)" />
+      <div class="error-msg" id="newUserError">Введи имя и 4 цифры ПИНа</div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="resetAuthModal()">Назад</button>
+        <button class="btn-rate" id="btnRegisterUser" onclick="registerNewUser()">Создать и войти</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Модалка оценки аромата -->
+<div class="modal-backdrop" id="rateModal">
+  <div class="modal">
+    <h3 id="rateModalTitle">Оценить аромат</h3>
+    <p id="rateModalUser">Оценка от имени: —</p>
+    
+    <label style="font-size: 13px; color: var(--text-muted);">Оценка от 1 до 10:</label>
+    <input type="number" id="scoreInput" class="input-field" min="1" max="10" value="8" />
+
+    <label style="font-size: 13px; color: var(--text-muted);">Чем пахнет для тебя (простыми словами):</label>
+    <input type="text" id="commentInput" class="input-field" placeholder="Например: вишнёвое варенье и костёр, очень круто" />
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeRateModal()">Отмена</button>
+      <button class="btn-rate" id="btnSubmitReview" onclick="submitReview()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ВСТАВЬ СЮДА ССЫЛКУ ИЗ GOOGLE APPS SCRIPT (заканчивается на /exec)
+  const API_URL = "https://script.google.com/macros/s/AKfycbwhxSApoUHt9e-0l3FKQrMRqi4xEv-ePYhNvdmjGwtqLkG66lhHg5MCN4-wU9td4ZZ5hQ/exec";
+
+  let perfumes = [];
+  let userNames = [];
+  let reviews = {};
+  
+  let currentUser = localStorage.getItem("scent_current_user") || null;
+  let currentPin = localStorage.getItem("scent_current_pin") || null;
+  let selectedPresetName = null;
+  let activePerfumeIdForRate = null;
+  let currentVibeFilter = "all";
+
+  async function init() {
+    updateUserUI();
+
+    document.getElementById("searchInput").addEventListener("input", renderPerfumes);
+    document.querySelectorAll("#vibeFilters .chip").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#vibeFilters .chip").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentVibeFilter = btn.dataset.filter;
+        renderPerfumes();
+      });
+    });
+
+    await loadDataFromSheets();
+  }
+
+  async function loadDataFromSheets() {
+    const loader = document.getElementById("loader");
+    loader.style.display = "block";
+    try {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+      perfumes = data.perfumes || [];
+      userNames = data.users || [];
+      reviews = data.reviews || {};
+      loader.style.display = "none";
+      renderPerfumes();
+    } catch (err) {
+      loader.textContent = "Ошибка загрузки базы. Проверь ссылку API_URL и настройки доступа в Apps Script.";
+      console.error(err);
+    }
+  }
+
+  async function postToSheets(payload) {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      redirect: "follow",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    });
+    return await res.json();
+  }
+
+  function updateUserUI() {
+    const label = document.getElementById("currentUserName");
+    label.textContent = currentUser ? `${currentUser} (сменить)` : "Войти для оценки";
+  }
+
+  function renderPerfumes() {
+    const grid = document.getElementById("perfumeGrid");
+    const query = document.getElementById("searchInput").value.toLowerCase().trim();
+    grid.innerHTML = "";
+
+    const filtered = perfumes.filter(p => {
+      const matchesVibe = currentVibeFilter === "all" || p.vibes.includes(currentVibeFilter);
+      const haystack = `${p.num} ${p.brand} ${p.name} ${p.realScent} ${p.pyramid.top} ${p.pyramid.heart} ${p.pyramid.base}`.toLowerCase();
+      const matchesSearch = !query || haystack.includes(query);
+      return matchesVibe && matchesSearch;
+    });
+
+    filtered.forEach(p => {
+      const itemReviews = reviews[p.id] || [];
+      const avg = itemReviews.length
+        ? (itemReviews.reduce((acc, r) => acc + r.score, 0) / itemReviews.length).toFixed(1)
+        : "—";
+
+      const reviewsHtml = itemReviews.length
+        ? itemReviews.map(r => `
+            <div class="review-item">
+              <div class="review-meta">
+                <span class="review-author">${r.author}</span>
+                <span>${r.score}/10</span>
+              </div>
+              ${r.comment ? `<div class="review-text">${r.comment}</div>` : ""}
+            </div>
+          `).join("")
+        : `<div class="review-text">Пока никто не оценил. Будь первым!</div>`;
+
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="card-top">
+          <div>
+            <span class="shelf-num">${p.num}</span>
+            <div class="perfume-brand">${p.brand}</div>
+            <div class="perfume-name">${p.name}</div>
+          </div>
+          <div class="avg-score">
+            <strong>${avg}</strong>
+            <span>${itemReviews.length} оц.</span>
+          </div>
+        </div>
+
+        <div class="real-vibe">
+          <span class="vibe-label">В жизни пахнет так</span>
+          ${p.realScent}
+        </div>
+
+        <div class="specs">
+          <div class="spec-box">
+            <span class="spec-label">Стойкость</span>
+            ${p.longevity}
+          </div>
+          <div class="spec-box">
+            <span class="spec-label">Шлейф и громкость</span>
+            ${p.sillage}
+          </div>
+        </div>
+
+        <div class="tags">
+          <span class="tag">🗓 ${p.season}</span>
+          ${p.vibes.map(v => `<span class="tag"># ${v}</span>`).join("")}
+        </div>
+
+        <div class="pyramid">
+          <div><span>Верх:</span> ${p.pyramid.top}</div>
+          <div><span>Сердце:</span> ${p.pyramid.heart}</div>
+          <div><span>База:</span> ${p.pyramid.base}</div>
+        </div>
+
+        <div class="reviews-section">
+          <div class="reviews-header">
+            <span>Мнения гостей</span>
+            <button class="btn-rate" onclick="handleRateClick('${p.id}')">+ Оценить</button>
+          </div>
+          <div class="review-list">${reviewsHtml}</div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  function openAuthModal() {
+    resetAuthModal();
+    const list = document.getElementById("presetUsersList");
+    list.innerHTML = "";
+    userNames.forEach(name => {
+      const btn = document.createElement("button");
+      btn.className = "preset-btn";
+      btn.textContent = name;
+      btn.onclick = () => selectPresetUser(name);
+      list.appendChild(btn);
+    });
+    document.getElementById("authModal").classList.add("open");
+  }
+
+  function resetAuthModal() {
+    document.getElementById("authTitle").textContent = "Кто оценивает?";
+    document.getElementById("stepSelectUser").style.display = "block";
+    document.getElementById("stepPinCheck").style.display = "none";
+    document.getElementById("stepNewUser").style.display = "none";
+    document.getElementById("pinError").style.display = "none";
+    document.getElementById("newUserError").style.display = "none";
+    document.getElementById("pinInput").value = "";
+  }
+
+  function selectPresetUser(name) {
+    selectedPresetName = name;
+    document.getElementById("authTitle").textContent = `Вход: ${name}`;
+    document.getElementById("stepSelectUser").style.display = "none";
+    document.getElementById("stepPinCheck").style.display = "flex";
+    document.getElementById("pinInput").focus();
+  }
+
+  async function verifyPin() {
+    const enteredPin = document.getElementById("pinInput").value.trim();
+    const btn = document.getElementById("btnVerifyPin");
+    btn.disabled = true;
+    btn.textContent = "Проверка...";
+
+    const result = await postToSheets({ action: "login", name: selectedPresetName, pin: enteredPin });
+    btn.disabled = false;
+    btn.textContent = "Войти";
+
+    if (result.success) {
+      currentUser = selectedPresetName;
+      currentPin = enteredPin;
+      localStorage.setItem("scent_current_user", currentUser);
+      localStorage.setItem("scent_current_pin", currentPin);
+      updateUserUI();
+      document.getElementById("authModal").classList.remove("open");
+      if (activePerfumeIdForRate) openRateModal(activePerfumeIdForRate);
+    } else {
+      document.getElementById("pinError").style.display = "block";
+    }
+  }
+
+  function showNewUserStep() {
+    document.getElementById("authTitle").textContent = "Новый дегустатор";
+    document.getElementById("stepSelectUser").style.display = "none";
+    document.getElementById("stepNewUser").style.display = "flex";
+  }
+
+  async function registerNewUser() {
+    const name = document.getElementById("newNameInput").value.trim();
+    const pin = document.getElementById("newPinInput").value.trim();
+    const errEl = document.getElementById("newUserError");
+
+    if (!name || !/^\d{4}$/.test(pin)) {
+      errEl.textContent = "Введи имя и 4 цифры ПИНа";
+      errEl.style.display = "block";
+      return;
+    }
+
+    const btn = document.getElementById("btnRegisterUser");
+    btn.disabled = true;
+    btn.textContent = "Создаём...";
+
+    const result = await postToSheets({ action: "register", name, pin });
+    btn.disabled = false;
+    btn.textContent = "Создать и войти";
+
+    if (result.success) {
+      userNames.push(name);
+      currentUser = name;
+      currentPin = pin;
+      localStorage.setItem("scent_current_user", currentUser);
+      localStorage.setItem("scent_current_pin", currentPin);
+      updateUserUI();
+      document.getElementById("authModal").classList.remove("open");
+      if (activePerfumeIdForRate) openRateModal(activePerfumeIdForRate);
+    } else {
+      errEl.textContent = result.error || "Ошибка регистрации";
+      errEl.style.display = "block";
+    }
+  }
+
+  function handleRateClick(perfumeId) {
+    activePerfumeIdForRate = perfumeId;
+    if (!currentUser || !currentPin) {
+      openAuthModal();
+    } else {
+      openRateModal(perfumeId);
+    }
+  }
+
+  function openRateModal(perfumeId) {
+    const perfume = perfumes.find(p => p.id === perfumeId);
+    document.getElementById("rateModalTitle").textContent = `${perfume.brand} — ${perfume.name}`;
+    document.getElementById("rateModalUser").textContent = `Оценка от имени: ${currentUser}`;
+    
+    const existing = (reviews[perfumeId] || []).find(r => r.author === currentUser);
+    document.getElementById("scoreInput").value = existing ? existing.score : 8;
+    document.getElementById("commentInput").value = existing ? existing.comment : "";
+    
+    document.getElementById("rateModal").classList.add("open");
+  }
+
+  function closeRateModal() {
+    document.getElementById("rateModal").classList.remove("open");
+    activePerfumeIdForRate = null;
+  }
+
+  async function submitReview() {
+    const score = Math.min(10, Math.max(1, parseInt(document.getElementById("scoreInput").value, 10) || 8));
+    const comment = document.getElementById("commentInput").value.trim();
+    const btn = document.getElementById("btnSubmitReview");
+
+    btn.disabled = true;
+    btn.textContent = "Сохраняем...";
+
+    const result = await postToSheets({
+      action: "rate",
+      perfume_id: activePerfumeIdForRate,
+      author: currentUser,
+      pin: currentPin,
+      score,
+      comment
+    });
+
+    btn.disabled = false;
+    btn.textContent = "Сохранить";
+
+    if (result.success) {
+      if (!reviews[activePerfumeIdForRate]) reviews[activePerfumeIdForRate] = [];
+      const existingIndex = reviews[activePerfumeIdForRate].findIndex(r => r.author === currentUser);
+      const reviewObj = { author: currentUser, score, comment };
+      
+      if (existingIndex >= 0) {
+        reviews[activePerfumeIdForRate][existingIndex] = reviewObj;
+      } else {
+        reviews[activePerfumeIdForRate].push(reviewObj);
+      }
+
+      closeRateModal();
+      renderPerfumes();
+    } else {
+      alert("Не удалось сохранить оценку. Попробуй перезайти в профиль.");
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>

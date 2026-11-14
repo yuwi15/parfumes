@@ -75,15 +75,20 @@
       background: var(--accent);
     }
 
-    /* Поиск и фильтры */
+    /* Поиск, сортировка и фильтры */
     .controls {
       margin: 20px 0;
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
+    .search-sort-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
     .search-input {
-      width: 100%;
+      flex: 1 1 240px;
       background: var(--surface);
       border: 1px solid var(--border);
       color: var(--text);
@@ -93,6 +98,19 @@
       outline: none;
     }
     .search-input:focus { border-color: var(--accent); }
+
+    .sort-select {
+      flex: 0 1 auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      outline: none;
+      cursor: pointer;
+    }
+    .sort-select:focus { border-color: var(--accent); }
 
     .filter-row {
       display: flex;
@@ -177,7 +195,7 @@
       padding: 6px 10px;
       border-radius: 10px;
       border: 1px solid var(--border);
-      min-width: 58px;
+      min-width: 62px;
     }
     .avg-score strong {
       display: block;
@@ -389,7 +407,14 @@
 
 <main class="container">
   <div class="controls">
-    <input type="text" id="searchInput" class="search-input" placeholder="Поиск по названию, запаху (кожа, лимон, ваниль) или номеру (#01)..." />
+    <div class="search-sort-row">
+      <input type="text" id="searchInput" class="search-input" placeholder="Поиск по названию, запаху (кожа, ваниль) или номеру (#01)..." />
+      <select id="sortSelect" class="sort-select" aria-label="Сортировка">
+        <option value="default">По номеру (#01–#31)</option>
+        <option value="rating_desc">Сначала высокий рейтинг ↓</option>
+        <option value="rating_asc">Сначала низкий рейтинг ↑</option>
+      </select>
+    </div>
     
     <div class="filter-row" id="vibeFilters">
       <button class="chip active" data-filter="all">Все ароматы</button>
@@ -444,8 +469,8 @@
     <h3 id="rateModalTitle">Оценить аромат</h3>
     <p id="rateModalUser">Оценка от имени: —</p>
     
-    <label style="font-size: 13px; color: var(--text-muted);">Оценка от 1 до 10:</label>
-    <input type="number" id="scoreInput" class="input-field" min="1" max="10" value="8" />
+    <label style="font-size: 13px; color: var(--text-muted);">Оценка от 1 до 10 (можно с половинкой, например 8.5):</label>
+    <input type="number" id="scoreInput" class="input-field" min="1" max="10" step="0.5" value="8" />
 
     <label style="font-size: 13px; color: var(--text-muted);">Чем пахнет для тебя (простыми словами):</label>
     <input type="text" id="commentInput" class="input-field" placeholder="Например: вишнёвое варенье и костёр, очень круто" />
@@ -458,7 +483,7 @@
 </div>
 
 <script>
-  // ВСТАВЬ СЮДА ССЫЛКУ ИЗ GOOGLE APPS SCRIPT (заканчивается на /exec)
+  // ВСТАВЬ СЮДА СВОЮ ССЫЛКУ ИЗ GOOGLE APPS SCRIPT (заканчивается на /exec)
   const API_URL = "https://script.google.com/macros/s/AKfycbwhxSApoUHt9e-0l3FKQrMRqi4xEv-ePYhNvdmjGwtqLkG66lhHg5MCN4-wU9td4ZZ5hQ/exec";
 
   let perfumes = [];
@@ -470,11 +495,17 @@
   let selectedPresetName = null;
   let activePerfumeIdForRate = null;
   let currentVibeFilter = "all";
+  let currentSort = "default";
 
   async function init() {
     updateUserUI();
 
     document.getElementById("searchInput").addEventListener("input", renderPerfumes);
+    document.getElementById("sortSelect").addEventListener("change", (e) => {
+      currentSort = e.target.value;
+      renderPerfumes();
+    });
+
     document.querySelectorAll("#vibeFilters .chip").forEach(btn => {
       btn.addEventListener("click", () => {
         document.querySelectorAll("#vibeFilters .chip").forEach(b => b.classList.remove("active"));
@@ -519,23 +550,41 @@
     label.textContent = currentUser ? `${currentUser} (сменить)` : "Войти для оценки";
   }
 
+  function getAvgRating(perfumeId) {
+    const list = reviews[perfumeId] || [];
+    if (!list.length) return null;
+    const sum = list.reduce((acc, r) => acc + Number(r.score || 0), 0);
+    return sum / list.length;
+  }
+
   function renderPerfumes() {
     const grid = document.getElementById("perfumeGrid");
     const query = document.getElementById("searchInput").value.toLowerCase().trim();
     grid.innerHTML = "";
 
-    const filtered = perfumes.filter(p => {
+    let filtered = perfumes.filter(p => {
       const matchesVibe = currentVibeFilter === "all" || p.vibes.includes(currentVibeFilter);
       const haystack = `${p.num} ${p.brand} ${p.name} ${p.realScent} ${p.pyramid.top} ${p.pyramid.heart} ${p.pyramid.base}`.toLowerCase();
       const matchesSearch = !query || haystack.includes(query);
       return matchesVibe && matchesSearch;
     });
 
+    // Сортировка по рейтингу (ароматы без оценок всегда уходят в конец)
+    if (currentSort !== "default") {
+      filtered = [...filtered].sort((a, b) => {
+        const avgA = getAvgRating(a.id);
+        const avgB = getAvgRating(b.id);
+        if (avgA === null && avgB === null) return 0;
+        if (avgA === null) return 1;
+        if (avgB === null) return -1;
+        return currentSort === "rating_desc" ? avgB - avgA : avgA - avgB;
+      });
+    }
+
     filtered.forEach(p => {
       const itemReviews = reviews[p.id] || [];
-      const avg = itemReviews.length
-        ? (itemReviews.reduce((acc, r) => acc + r.score, 0) / itemReviews.length).toFixed(1)
-        : "—";
+      const avgVal = getAvgRating(p.id);
+      const avgDisplay = avgVal !== null ? Number(avgVal.toFixed(2)) : "—";
 
       const reviewsHtml = itemReviews.length
         ? itemReviews.map(r => `
@@ -559,7 +608,7 @@
             <div class="perfume-name">${p.name}</div>
           </div>
           <div class="avg-score">
-            <strong>${avg}</strong>
+            <strong>${avgDisplay}</strong>
             <span>${itemReviews.length} оц.</span>
           </div>
         </div>
@@ -725,7 +774,8 @@
   }
 
   async function submitReview() {
-    const score = Math.min(10, Math.max(1, parseInt(document.getElementById("scoreInput").value, 10) || 8));
+    const rawVal = String(document.getElementById("scoreInput").value).replace(",", ".");
+    const score = Math.min(10, Math.max(1, parseFloat(rawVal) || 8));
     const comment = document.getElementById("commentInput").value.trim();
     const btn = document.getElementById("btnSubmitReview");
 
